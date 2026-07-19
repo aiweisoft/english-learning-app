@@ -63,6 +63,22 @@
 				"navigationBarBackgroundColor": "#FF7043",
 				"navigationBarTextStyle": "white"
 			}
+		},
+		{
+			"path": "pages/word-manage/word-manage",
+			"style": {
+				"navigationBarTitleText": "词库管理",
+				"navigationBarBackgroundColor": "#FF7043",
+				"navigationBarTextStyle": "white"
+			}
+		},
+		{
+			"path": "pages/word-list/word-list",
+			"style": {
+				"navigationBarTitleText": "单词管理",
+				"navigationBarBackgroundColor": "#FF7043",
+				"navigationBarTextStyle": "white"
+			}
 		}
 	],
 	"globalStyle": {

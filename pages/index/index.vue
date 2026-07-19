@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import { getAllWords, getCategories, getRandomSentence, getAllSentences } from '@/data/words.js'
+import { getAllWords, getCategories, getAllSentences } from '@/data/word-service.js'
 
 export default {
 	data() {
@@ -73,7 +73,8 @@ export default {
 	methods: {
 		initData() {
 			this.allSentences = getAllSentences()
-			this.sentenceIndex = Math.floor(Math.random() * this.allSentences.length)
+			const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)
+			this.sentenceIndex = dayOfYear % this.allSentences.length
 			this.dailySentence = this.allSentences[this.sentenceIndex]
 			this.categories = getCategories()
 			this.totalWords = getAllWords().length

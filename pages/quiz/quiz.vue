@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import { generateQuiz, generateQuizByWords } from '@/data/words.js'
+import { generateQuiz, generateQuizByWords } from '@/data/word-service.js'
 
 export default {
 	data() {
@@ -89,14 +89,13 @@ export default {
 		this.categoryName = decodeURIComponent(options.categoryName || '随机测验')
 		if (options.wordIds) {
 			const ids = options.wordIds.split(',').map(Number)
-			this.questions = generateQuizByWords(ids)
+			this.questions = generateQuizByWords(ids, this.categoryId)
 		} else {
 			this.questions = generateQuiz(this.categoryId || 0, 10)
 		}
 	},
 	methods: {
 		selectOption(index) {
-			if (this.selectedIndex !== null) return
 			this.selectedIndex = index
 			this.answers[this.current] = this.currentQuestion.options[index]
 		},

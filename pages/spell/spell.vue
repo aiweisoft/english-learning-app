@@ -60,7 +60,7 @@
 </template>
 
 <script>
-import { generateSpellQuiz, generateSpellQuizByWords } from '@/data/words.js'
+import { generateSpellQuiz, generateSpellQuizByWords } from '@/data/word-service.js'
 
 export default {
 	data() {
@@ -116,7 +116,7 @@ export default {
 		this.categoryName = decodeURIComponent(options.categoryName || '随机拼写')
 		if (options.wordIds) {
 			const ids = options.wordIds.split(',').map(Number)
-			this.questions = generateSpellQuizByWords(ids)
+			this.questions = generateSpellQuizByWords(ids, this.categoryId)
 		} else {
 			this.questions = generateSpellQuiz(this.categoryId || 0, 10)
 		}
@@ -177,8 +177,7 @@ export default {
 		},
 		retry() {
 			if (this.categoryId || this.categoryName.includes('第')) {
-				const ids = this.questions.map(q => q.id).join(',')
-				this.questions = generateSpellQuizByWords(this.questions.map(q => q.id))
+				this.questions = generateSpellQuizByWords(this.questions.map(q => q.id), this.categoryId)
 			} else {
 				this.questions = generateSpellQuiz(this.categoryId || 0, 10)
 			}

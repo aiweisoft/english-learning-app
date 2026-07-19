@@ -47,11 +47,15 @@
 		<view class="reset-btn" @click="resetData">
 			<text>重置学习数据</text>
 		</view>
+
+		<view class="manage-btn" @click="goToWordManage">
+			<text>词库管理</text>
+		</view>
 	</view>
 </template>
 
 <script>
-import { getAllWords, getCategories, getWordsByCategory } from '@/data/words.js'
+import { getAllWords, getCategories, getWordsByCategory } from '@/data/word-service.js'
 
 export default {
 	data() {
@@ -115,6 +119,11 @@ export default {
 						uni.showToast({ title: '已重置', icon: 'success' })
 					}
 				}
+			})
+		},
+		goToWordManage() {
+			uni.navigateTo({
+				url: '/pages/word-manage/word-manage'
 			})
 		}
 	}
@@ -225,6 +234,13 @@ export default {
 	padding: 20rpx 0;
 	text-align: center;
 	color: #78909C;
+	font-size: 26rpx;
+}
+.manage-btn {
+	margin-top: 20rpx;
+	padding: 20rpx 0;
+	text-align: center;
+	color: #42A5F5;
 	font-size: 26rpx;
 }
 </style>

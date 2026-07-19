@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { getWordsByGroup, getGroupCount } from '@/data/words.js'
+import { getWordsByGroup, getGroupCount } from '@/data/word-service.js'
 
 const GROUP_SIZE = 10
 

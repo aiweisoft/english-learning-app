@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import { getCategories, getWordsByCategory } from '@/data/words.js'
+import { getCategories, getWordsByCategory } from '@/data/word-service.js'
 
 export default {
 	data() {

@@ -50,7 +50,7 @@
 </template>
 
 <script>
-import { getCategories } from '@/data/words.js'
+import { getCategories } from '@/data/word-service.js'
 
 export default {
 	data() {
