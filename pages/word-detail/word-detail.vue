@@ -47,13 +47,17 @@
 		<view v-if="groupWords.length === 0" class="empty">暂无单词</view>
 
 		<view class="bottom-bar">
+			<view :class="['play-btn', playing ? 'playing' : '']" @click="togglePlay">
+				<view v-if="!playing" class="icon-play"></view>
+				<view v-else class="icon-stop"></view>
+			</view>
 			<view v-if="allDone" class="all-done-msg">全部完成</view>
 			<template v-else>
 				<view :class="['bar-btn', 'prev-btn', currentGroup === 0 ? 'disabled' : '']" @click="prevGroup">
 					<text>上一组</text>
 				</view>
 				<view class="bar-btn test-btn" @click="startGroupQuiz">
-					<text>选择</text>
+					<text>测验</text>
 				</view>
 				<view class="bar-btn spell-btn" @click="startGroupSpell">
 					<text>拼写</text>
@@ -80,7 +84,10 @@ export default {
 			currentGroup: 0,
 			testedGroups: [],
 			groupWords: [],
-			learnedIds: []
+			learnedIds: [],
+			playing: false,
+			playIndex: 0,
+			playToken: 0
 		}
 	},
 	computed: {
@@ -100,6 +107,12 @@ export default {
 			this.loadProgress()
 			this.loadGroupWords()
 		}
+	},
+	onHide() {
+		this.stopPlay()
+	},
+	onUnload() {
+		this.stopPlay()
 	},
 	methods: {
 		initData() {
@@ -131,6 +144,7 @@ export default {
 			uni.setStorageSync('groupProgress', JSON.stringify(progress))
 		},
 		loadGroupWords() {
+			this.stopPlay()
 			this.groupWords = getWordsByGroup(this.categoryId, this.currentGroup, GROUP_SIZE)
 		},
 		groupStatus(idx) {
@@ -193,6 +207,7 @@ export default {
 			uni.setStorageSync('learnedWords', this.learnedIds.length)
 		},
 		speakWord(text) {
+			this.stopPlay()
 			try {
 				if (typeof window !== 'undefined' && window.speechSynthesis) {
 					const utterance = new SpeechSynthesisUtterance(text)
@@ -205,6 +220,124 @@ export default {
 			const audio = uni.createInnerAudioContext()
 			audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=0'
 			audio.play()
+		},
+		togglePlay() {
+			if (this.playing) {
+				this.stopPlay()
+			} else {
+				this.startPlay()
+			}
+		},
+		startPlay() {
+			if (!this.groupWords.length) return
+			this.stopPlay()
+			this.playIndex = 0
+			this.playing = true
+			this.playToken++
+			this.playNext()
+		},
+		stopPlay() {
+			this.playing = false
+			this.playToken++
+			if (this.playTimer) {
+				clearTimeout(this.playTimer)
+				this.playTimer = null
+			}
+			if (this.speakTimer) {
+				clearTimeout(this.speakTimer)
+				this.speakTimer = null
+			}
+			this.audioDone = null
+			if (this.playAudio) {
+				try { this.playAudio.stop() } catch (e) {}
+			}
+			if (typeof window !== 'undefined' && window.speechSynthesis) {
+				try { window.speechSynthesis.cancel() } catch (e) {}
+			}
+		},
+		playNext() {
+			if (!this.playing) return
+			if (this.playIndex >= this.groupWords.length) {
+				this.stopPlay()
+				return
+			}
+			const word = this.groupWords[this.playIndex]
+			const token = this.playToken
+			const next = () => {
+				if (token !== this.playToken) return
+				this.playIndex++
+				this.playTimer = setTimeout(() => {
+					this.playTimer = null
+					if (token === this.playToken) this.playNext()
+				}, 500)
+			}
+			this.speakText(word.en, 'en-US', () => {
+				if (token !== this.playToken) return
+				this.speakText(word.zh, 'zh-CN', next)
+			})
+		},
+		speakText(text, lang, done) {
+			if (!text) {
+				done()
+				return
+			}
+			let finished = false
+			const finish = () => {
+				if (finished) return
+				finished = true
+				if (this.speakTimer) {
+					clearTimeout(this.speakTimer)
+					this.speakTimer = null
+				}
+				done()
+			}
+			if (typeof window !== 'undefined' && window.speechSynthesis) {
+				try {
+					const utterance = new SpeechSynthesisUtterance(text)
+					utterance.lang = lang
+					utterance.rate = 0.9
+					utterance.onend = finish
+					utterance.onerror = finish
+					window.speechSynthesis.speak(utterance)
+					this.speakTimer = setTimeout(finish, Math.max(1500, text.length * 400) + 2000)
+					return
+				} catch (e) {}
+			}
+			this.ensureAudio()
+			if (!this.playAudio) {
+				finish()
+				return
+			}
+			const audio = this.playAudio
+			this.audioDone = finish
+			const url = lang === 'zh-CN'
+				? 'https://fanyi.baidu.com/gettts?lan=zh&text=' + encodeURIComponent(text) + '&spd=3&source=web'
+				: 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=0'
+			try {
+				audio.stop()
+				audio.src = url
+				audio.play()
+			} catch (e) {
+				finish()
+				return
+			}
+			this.speakTimer = setTimeout(() => {
+				try { audio.stop() } catch (e) {}
+				finish()
+			}, Math.max(1500, text.length * 500) + 3000)
+		},
+		ensureAudio() {
+			if (this.playAudio) return
+			if (typeof uni.createInnerAudioContext !== 'function') return
+			const audio = uni.createInnerAudioContext()
+			audio.onEnded(() => this.finishAudioPlay())
+			audio.onError(() => this.finishAudioPlay())
+			this.playAudio = audio
+		},
+		finishAudioPlay() {
+			const done = this.audioDone
+			this.audioDone = null
+			if (done) done()
 		}
 	}
 }
@@ -370,6 +503,36 @@ export default {
 	padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
 	background: #ffffff;
 	border-top: 1rpx solid #B0BEC5;
+}
+.play-btn {
+	width: 72rpx;
+	height: 72rpx;
+	border-radius: 9999rpx;
+	background: #FFE082;
+	color: #263238;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	margin-right: 12rpx;
+}
+.play-btn.playing {
+	background: #EF5350;
+	color: #fff;
+}
+.icon-play {
+	width: 0;
+	height: 0;
+	border-top: 12rpx solid transparent;
+	border-bottom: 12rpx solid transparent;
+	border-left: 18rpx solid #263238;
+	margin-left: 6rpx;
+}
+.icon-stop {
+	width: 20rpx;
+	height: 20rpx;
+	background: #ffffff;
+	border-radius: 2rpx;
 }
 .bar-btn {
 	padding: 20rpx 20rpx;
